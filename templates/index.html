@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                token = data.access_token;
+                localStorage.setItem("token", token);
+
+                document.getElementById("loginMessage").innerText = "Inloggad";
+            }
+            else {
+                document.getElementById("loginMessage").innerText = data.error;
+            }
+        }
+
+        async function createTopic() {
+            const title = document.getElementById("topicTitle").value;
+            const category = document.getElementById("topicCategory").value;
+            const description = document.getElementById("topicDescription").value;
+
+            const response = await fetch(apiUrl + "/topics", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+                body: JSON.stringify({
+                    title: title,
+                    category: category,
+                    description: description
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                document.getElementById("topicMessage").innerText = "Frågan skapades";
+
+                getTopics();
+            }
+            else {
+                document.getElementById("topicMessage").innerText = data.error;
+            }
+        }
+
+        async function getTopics() {
+            const response = await fetch(apiUrl + "/topics");
+
+            const topics = await response.json();
+
+            const topicsDiv = document.getElementById("topics");
+
+            topicsDiv.innerHTML = "";
+
+            for (let topic of topics) {
+                topicsDiv.innerHTML += `
+                    <div class="topic">
+                        <h3>${topic.title}</h3>
+
+                        <p><b>Kategori:</b> ${topic.category}</p>
+
+                        <p>${topic.description}</p>
+
+                        <p class="small">
+                            Skapad av ${topic.username}
+                        </p>
+                    </div>
+                `;
+            }
+        }
+
+        getTopics();
+    </script>
+
+</body>
+</html>

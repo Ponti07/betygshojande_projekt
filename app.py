@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 import mysql.connector
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -25,33 +25,8 @@ def get_db_connection():
 
 
 @app.route("/", methods=["GET"])
-def api_docs():
-    html = """
-    <!DOCTYPE html>
-    <html lang="sv">
-    <head>
-        <meta charset="UTF-8">
-        <title>Fordonsforum API</title>
-    </head>
-    <body>
-        <h1>Fordonsforum API</h1>
-        <p>Välkommen till mitt REST API för fordonsfrågor.</p>
-
-        <h2>Routes</h2>
-
-        <p><b>POST /users</b> - Skapa användare</p>
-        <p><b>POST /login</b> - Logga in och få token</p>
-
-        <p><b>GET /topics</b> - Hämta alla fordonsfrågor</p>
-        <p><b>GET /topics/&lt;id&gt;</b> - Hämta en fråga med svar</p>
-        <p><b>POST /topics</b> - Skapa fordonsfråga - kräver token</p>
-
-        <p><b>POST /topics/&lt;id&gt;/posts</b> - Svara på fråga - kräver token</p>
-        <p><b>DELETE /posts/&lt;id&gt;</b> - Ta bort svar - kräver token</p>
-    </body>
-    </html>
-    """
-    return html, 200
+def home():
+    return render_template("index.html")
 
 @app.route("/users", methods=["POST"])
 def create_user():
