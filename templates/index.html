@@ -1,82 +1,129 @@
 <!DOCTYPE html>
-                },
-                body: JSON.stringify({
-                    username: username,
-                    password: password
-                })
-            });
+<html lang="sv">
+<head>
+    <meta charset="UTF-8">
+    <title>Fordonsforum</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
 
-            const data = await response.json();
+<body>
+    <div class="header">
+        <h1>Fordonsforum</h1>
+        <p>Ställ frågor om bilar, motorcyklar, A-traktorer, reparationer och trimning.</p>
+    </div>
 
-            if (response.ok) {
-                token = data.access_token;
-                localStorage.setItem("token", token);
+    <nav class="nav">
+        <button data-view="home" onclick="showView('home')">Hem</button>
+        <button data-view="create-topic" class="hidden" onclick="showView('create-topic')">Skapa fråga</button>
+        <button data-view="register" onclick="showView('register')">Skapa konto</button>
+        <button data-view="login" id="authButton" onclick="showView('login')">Logga in</button>
+        <span class="userName" id="userName" onclick="showProfile()"></span>
+    </nav>
 
-                document.getElementById("loginMessage").innerText = "Inloggad";
-            }
-            else {
-                document.getElementById("loginMessage").innerText = data.error;
-            }
-        }
+    <div class="container">
 
-        async function createTopic() {
-            const title = document.getElementById("topicTitle").value;
-            const category = document.getElementById("topicCategory").value;
-            const description = document.getElementById("topicDescription").value;
+        <div class="view" id="view-home">
+            <div class="box">
+                <div class="forumTop">
+                    <h2>Forumtrådar</h2>
+                    <button onclick="getTopics()">Uppdatera</button>
+                </div>
+                <div class="filterRow">
+                    <label for="filterCategory">Kategori:</label>
+                    <select id="filterCategory" onchange="getTopics()">
+                        <option value="">Alla kategorier</option>
+                        <option value="Bil">Bil</option>
+                        <option value="Motorcykel">Motorcykel</option>
+                        <option value="A-traktor">A-traktor</option>
+                        <option value="Reparation">Reparation</option>
+                        <option value="Trimning">Trimning</option>
+                        <option value="Köpråd">Köpråd</option>
+                    </select>
+                    <input id="filterSearch" type="text" placeholder="Sök i frågor..." oninput="onSearchInput()">
+                </div>
+                <div id="topics"></div>
+            </div>
+        </div>
 
-            const response = await fetch(apiUrl + "/topics", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": "Bearer " + token
-                },
-                body: JSON.stringify({
-                    title: title,
-                    category: category,
-                    description: description
-                })
-            });
+        <div class="view hidden" id="view-create-topic">
+            <div class="box">
+                <h2>Skapa ny fordonsfråga</h2>
+                <input id="topicTitle" placeholder="Rubrik">
 
-            const data = await response.json();
+                <select id="topicCategory">
+                    <option value="Bil">Bil</option>
+                    <option value="Motorcykel">Motorcykel</option>
+                    <option value="A-traktor">A-traktor</option>
+                    <option value="Reparation">Reparation</option>
+                    <option value="Trimning">Trimning</option>
+                    <option value="Köpråd">Köpråd</option>
+                </select>
 
-            if (response.ok) {
-                document.getElementById("topicMessage").innerText = "Frågan skapades";
+                <textarea id="topicDescription" placeholder="Beskriv ditt fordonsproblem"></textarea>
 
-                getTopics();
-            }
-            else {
-                document.getElementById("topicMessage").innerText = data.error;
-            }
-        }
+                <input id="topicImage" type="file" accept="image/*">
 
-        async function getTopics() {
-            const response = await fetch(apiUrl + "/topics");
+                <button onclick="createTopic()">Publicera fråga</button>
+                <p id="topicMessage"></p>
+            </div>
+        </div>
 
-            const topics = await response.json();
+        <div class="view hidden" id="view-register">
+            <div class="box">
+                <h2>Skapa konto</h2>
+                <input id="registerUsername" placeholder="Användarnamn">
+                <input id="registerPassword" type="password" placeholder="Lösenord">
+                <input id="registerName" placeholder="Namn">
+                <button onclick="createUser()">Skapa konto</button>
+                <p id="registerMessage"></p>
+            </div>
+        </div>
 
-            const topicsDiv = document.getElementById("topics");
+        <div class="view hidden" id="view-login">
+            <div class="box">
+                <h2>Logga in</h2>
+                <input id="loginUsername" placeholder="Användarnamn">
+                <input id="loginPassword" type="password" placeholder="Lösenord">
+                <button onclick="login()">Logga in</button>
+                <p id="loginMessage"></p>
+            </div>
+        </div>
 
-            topicsDiv.innerHTML = "";
+        <div class="view hidden" id="view-profile">
+            <div class="box">
+                <h2>Min profil</h2>
+                <div id="profileInfo"></div>
+            </div>
+            <div class="box">
+                <h2>Mina frågor</h2>
+                <div id="profileTopics"></div>
+            </div>
+            <div class="box">
+                <h2>Mina svar</h2>
+                <div id="profileReplies"></div>
+            </div>
+        </div>
 
-            for (let topic of topics) {
-                topicsDiv.innerHTML += `
-                    <div class="topic">
-                        <h3>${topic.title}</h3>
+    </div>
 
-                        <p><b>Kategori:</b> ${topic.category}</p>
+    <div class="modal hidden" id="confirmModal">
+        <div class="modalBox">
+            <p id="confirmMessage"></p>
+            <div class="modalActions">
+                <button class="secondary" id="confirmCancel">Avbryt</button>
+                <button id="confirmOk">Ja</button>
+            </div>
+        </div>
+    </div>
 
-                        <p>${topic.description}</p>
-
-                        <p class="small">
-                            Skapad av ${topic.username}
-                        </p>
-                    </div>
-                `;
-            }
-        }
-
+    <script src="{{ url_for('static', filename='js/utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/auth.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/forum.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/profile.js') }}"></script>
+    <script>
+        updateNav();
+        showView("home");
         getTopics();
     </script>
-
 </body>
 </html>
